@@ -12,7 +12,9 @@ RUN apk update \
 
 ADD . /go/src/github.com/tonistiigi/dnsdock
 WORKDIR /go/src/github.com/tonistiigi/dnsdock
-RUN godep restore
+
+RUN go get -v github.com/tools/godep 、
+    && godep restore
 WORKDIR /go/src/github.com/tonistiigi/dnsdock/src
 RUN go build -o /tmp/output/dnsdock -ldflags "-X main.version=$(if version=$(git describe --contains HEAD 2>/dev/null); then echo $version; else echo "dev"; fi)" \
     && cp /tmp/output/dnsdock /go/bin/dnsdock
