@@ -1,5 +1,5 @@
 FROM alpine
 
-ADD go/bin/dnsdock /dnsdock
+ADD tmp/output/dnsdock /dnsdock
 
 ENTRYPOINT ["/dnsdock"]
