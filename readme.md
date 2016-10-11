@@ -1,10 +1,12 @@
-[![Build Status](https://secure.travis-ci.org/tonistiigi/dnsdock.png)](http://travis-ci.org/tonistiigi/dnsdock)
+[![Build Status](https://secure.travis-ci.org/aacebedo/dnsdock.png)](http://travis-ci.org/aacebedo/dnsdock)
 
 
 ## dnsdock
 
 DNS server for automatic docker container discovery. Simplified version of
-[crosbymichael/skydock](https://github.com/crosbymichael/skydock).
+[crosbymichael/skydock](https://github.com/crsbymichael/skydock).
+
+This project was initially created and maintained by [tonistiigi](https://github.com/tonistiigi).
 
 #### Differences from skydock
 
@@ -46,10 +48,10 @@ Install a golang development environment on your host and type the following com
 export GOPATH=/tmp/go
 export PATH=${PATH}:${GOPATH}/bin
 go get -v github.com/tools/godep
-go get -d -v https://github.com/tonistiigi/dnsdock
-cd ${GOPATH}/src/github.com/tonistiigi/dnsdock
+go get -d -v https://github.com/aacebedo/dnsdock
+cd ${GOPATH}/src/github.com/aacebedo/dnsdock
 godep restore
-cd ${GOPATH}/src/github.com/tonistiigi/dnsdock/src
+cd ${GOPATH}/src/github.com/aacebedo/dnsdock/src
 go build -o ${GOPATH}/bin/dnsdock
 ```
 
@@ -58,8 +60,8 @@ go build -o ${GOPATH}/bin/dnsdock
 To build with docker you need [rocker](https://github.com/grammarly/rocker). Check the
 website to install it and type the following commands:
 ```
-if git describe --contains HEAD &>/dev/null; then export VERSIONARGS="-var DNSDockVersion=`git describe --contains HEAD`"; else unset VERSIONARGS; fi
-rocker build -var Arch=[amd64|arm] ${VERSIONARGS} -var OutputDir=<outputdir> .
+git clone https://github.com/aacebedo/dnsdock <clone_directory_path>
+rocker build -var ARCH=[amd64|arm] -var OUTPUT_DIR=<outputdir> <clone_directory_path>
 ```
 
 #### Usage
@@ -121,7 +123,7 @@ Restart docker daemon after you have done that (`sudo service docker restart`).
 Now you only need to run the dnsdock container:
 
 ```
-docker run -d -v /var/run/docker.sock:/var/run/docker.sock --name dnsdock -p 172.17.0.1:53:53/udp tonistiigi/dnsdock [--opts]
+docker run -d -v /var/run/docker.sock:/var/run/docker.sock --name dnsdock -p 172.17.0.1:53:53/udp aacebedo/dnsdock [--opts]
 ```
 
 - `-d` starts container as daemon
@@ -155,7 +157,7 @@ If you also want to let the host machine discover the containers add `nameserver
 Mounting docker daemon's unix socket may not work with default configuration on
 these platforms. Please use
 [selinux-dockersock](https://github.com/dpw/selinux-dockersock) to fix this.
-More information in [#11](https://github.com/tonistiigi/dnsdock/issues/11).
+More information in [#11](https://github.com/aacebedo/dnsdock/issues/11).
 
 #### TLS Authentication
 
@@ -170,7 +172,7 @@ and the `DOCKER_CERTS` to a directory containing files named `ca.pem`,
 You may build this into your own container with this example Dockerfile:
 
 ```
-FROM tonistiigi/dnsdock
+FROM aacebedo/dnsdock
 
 ENV DOCKER_TLS_VERIFY 1
 ENV DOCKER_CERTS /certs
@@ -208,7 +210,7 @@ curl http://dnsdock.docker/set/ttl -X PUT --data-ascii '10'
 ```
 
 
-#### Overrides from ENV metadata
+#### Overrides from ENV metadata (DEPRECATED WILL BE REMOVED IN NEXT RELEASE)
 
 If you wish to fine tune the DNS response addresses you can define specific
 environment variables during container startup. This overrides the default
@@ -228,17 +230,39 @@ docker run -e DNSDOCK_ALIAS=db.docker,sql.docker -e DNSDOCK_TTL=10 \
 # matches db.docker and sql.docker
 ```
 
+#### Overrides with docker labels
+
+If you wish to fine tune the DNS response addresses you can define specific labels during 
+container creation. This overrides the default matching scheme from container and image name.
+
+Supported labels are `com.dnsdock.ignore`, `com.dnsdock.alias`, `com.dnsdock.name`, `com.dnsdock.tags`, `com.dnsdock.image`,
+`com.dnsdock.ttl`, `com.dnsdock.region`, and `com.dnsdock.ip_addr`
+
+```
+docker run -l com.dnsdock.name=master -l com.dnsdocker.image=mysql -l com.dnsdock.ttl=10 \
+           --name mymysql mysqlimage
+# matches master.mysql.docker
+```
+
+```
+docker run -l com.dnsdock.alias=db.docker,sql.docker -l com.dnsdock.ttl=10 \
+           --name mymysql mysqlimage
+# matches db.docker and sql.docker
+```
+
 Service metadata syntax by [progrium/registrator](https://github.com/progrium/registrator) is also supported.
 
 ```
-docker run -e SERVICE_TAGS=master -e SERVICE_NAME=mysql -e SERVICE_REGION=us2 \
+docker run -l com.dnsdock.tags=master -l com.dnsdock.name=mysql -l com.dnsdock.region=us2 \
            --name mymysql mysqlimage
 # matches master.mysql.us2.docker
 ```
 
 If you want dnsdock to skip processing a specific container set its
-`DNSDOCK_IGNORE` or `SERVICE_IGNORE` environment variable.
+`com.dnsdock.ignore` label.
 
+You can force the value of the IP address returned in the DNS record with the 
+`com.dnsdock.ip_address` label. This can be useful if you have a reverse proxy such as traefik in a container with mapped port and you want to redirect your clients to the front server instead of an internal docker container ip address.
 
 #### OSX Usage
 
@@ -288,8 +312,8 @@ Add the following snippet under the `units` part:
         [Service]
         EnvironmentFile=/etc/environment
         ExecStartPre=/bin/sh -c '/usr/bin/docker rm -f dnsdock || ls > /dev/null'
-        ExecStartPre=/bin/sh -c '/usr/bin/docker pull tonistiigi/dnsdock'
-        ExecStart=/usr/bin/docker run -v /var/run/docker.sock:/var/run/docker.sock --name dnsdock -p ${COREOS_PRIVATE_IPV4}:53:53/udp tonistiigi/dnsdock
+        ExecStartPre=/bin/sh -c '/usr/bin/docker pull aacebedo/dnsdock'
+        ExecStart=/usr/bin/docker run -v /var/run/docker.sock:/var/run/docker.sock --name dnsdock -p ${COREOS_PRIVATE_IPV4}:53:53/udp aacebedo/dnsdock
         ExecStop=/bin/sh -c '/usr/bin/docker stop dnsdock  || ls > /dev/null'
 ```
 
