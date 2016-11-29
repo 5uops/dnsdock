@@ -39,6 +39,7 @@ ENV PATH ${PATH}:/go/bin
 ENV CGO_ENABLED 0
 
 RUN go get -v github.com/tools/godep
+RUN go get -u github.com/golang/lint/golint
 
 RUN mkdir -p /go/src/github.com/aacebedo/dnsdock
 WORKDIR /go/src/github.com/aacebedo/dnsdock
@@ -57,8 +58,6 @@ WORKDIR /go/src/github.com/aacebedo/dnsdock
 
 WORKDIR /go/src/github.com/aacebedo/dnsdock
 RUN godep restore
-RUN go get -u github.com/golang/lint/golint
-
 ENV GOARCH={{$ARCH}}
 WORKDIR /go/src/github.com/aacebedo/dnsdock/src
 ATTACH sh
@@ -66,7 +65,7 @@ RUN go build -o /tmp/output/dnsdock -ldflags "-X main.version=$(if version=$(git
 RUN golint -set_exit_status
 {{if eq $ARCH "amd64"}}
 RUN go vet
-RUN go test
+RUN go test ./...
 {{end}}
 EXPORT /tmp/output/dnsdock ./dnsdock
 
@@ -79,9 +78,7 @@ FROM easypi/alpine-arm
 IMPORT ./dnsdock /bin/dnsdock
 ENTRYPOINT ["dnsdock"]
 TAG aacebedo/dnsdock:{{$DOCKERIMAGE_VERSION}}-{{$ARCH}}
-PUSH aacebedo/dnsdock:{{$DOCKERIMAGE_VERSION}}-{{$ARCH}}
 
 {{if ne $DOCKERIMAGE_VERSION "dev"}}
 TAG aacebedo/dnsdock:latest-{{$ARCH}}
-PUSH aacebedo/dnsdock:latest-{{$ARCH}}
 {{end}}
