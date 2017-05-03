@@ -11,21 +11,20 @@ package main
 import (
 	"crypto/tls"
 	"crypto/x509"
-	"io/ioutil"
-	"os"
-
-	"github.com/op/go-logging"
-
 	"github.com/aacebedo/dnsdock/src/core"
 	"github.com/aacebedo/dnsdock/src/servers"
 	"github.com/aacebedo/dnsdock/src/utils"
+	"github.com/op/go-logging"
+	"io/ioutil"
+	"os"
 )
-
+// GitSummary contains the version number
+var GitSummary string 
 var logger = logging.MustGetLogger("dnsdock.main")
 
 func main() {
 
-	var cmdLine core.CommandLine
+	var cmdLine = core.NewCommandLine(GitSummary)
 	config, err := cmdLine.ParseParameters(os.Args[1:])
 	if err != nil {
 		logger.Fatalf(err.Error())
