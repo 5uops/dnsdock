@@ -1,0 +1,16 @@
+version: 3.0
+
+docker_image::
+  stage: build
+  job_type: lite_image_build
+  complie:
+    dockerfile_path: Dockerfile
+    build_dir: /
+    cache: true
+  extract:
+    - /tmp/output/dnsdock
+
+  package:
+    dockerfile_path: Dockerfile.package
+      build_dir: /
+      cache: true
