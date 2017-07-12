@@ -1,6 +1,6 @@
 version: 3.0
 
-docker_image::
+docker_image:
   stage: build
   job_type: lite_image_build
   complie:
